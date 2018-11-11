@@ -4,7 +4,9 @@ import java.util.Date;
 import java.util.List;
 
 import br.edu.ifpe.jpa.IReportGenerator;
+import br.edu.ifpe.jpa.entities.Account;
 import br.edu.ifpe.jpa.entities.Client;
+import java.util.stream.Collectors;
 
 public class ReportJinq implements IReportGenerator {
 	
@@ -27,19 +29,23 @@ public class ReportJinq implements IReportGenerator {
 		return helper.execute(Account.class, streams ->
                         streams
                                 .where(account -> account.getClient().getEmail().equals(email))
-                                .sumDouble(account -> account.getBalance())
+                                .sumDouble(Account::getBalance)
                 );
 	}
 
 	@Override
 	public List<String> getBestClientsEmails(int agency, int rankingSize) {
-		return helper.execute(Account.class, streams -> 
+		List<String> emails = null;
+                emails.addAll(
+                        helper.execute(Account.class, streams ->
                         streams
-                                .where(account -> account.getClient().getEmail())
-                                .where(account -> account.getAgency().equals(agency))
-                                .sumDouble(account -> account.getBalance())
-                                .sortedBy(account -> account.getBalance())
-                                .toList()
+                                .sortedBy(Account::getBalance)
+                                .limit(rankingSize)
+                                .where(a -> a.getAgency().equals(agency))
+                                .select(a -> a.getClient().getEmail())
+                                .sumDouble(Account::getBalance)
+                        )
                 );
+                return emails;
 	}
 }
